@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>もぐら伝説</title>
+
+<style>
+body {
+  text-align: center;
+  background: #87CEEB;
+  font-family: sans-serif;
+  margin: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+h1 {
+  margin-top: 12px;
+}
+
+#controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  position: relative;
+  z-index: 1000;
+}
+
+#info {
+  font-size: 20px;
+  margin-top: 10px;
+}
+
+#comboWrap {
+  font-weight: bold;
+}
+
+#comboWrap.fever {
+  color: #ff8c00;
+  animation: comboGlow 0.45s infinite alternate;
+}
+
+@keyframes comboGlow {
+  from {
+    transform: scale(1);
+    text-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+  to {
+    transform: scale(1.08);
+    text-shadow: 0 0 12px rgba(255,255,255,0.9), 0 0 22px rgba(255,215,0,0.9);
+  }
+}
+
+#board {
+  width: 320px;
+  margin: 20px auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  position: relative;
+}
+
+#board.fever-board {
+  animation: boardShake 0.18s linear 2;
+}
+
+@keyframes boardShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+.hole {
+  width: 100px;
+  height: 100px;
+  background: #654321;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+}
+
+.mole {
+  width: 80px;
+  height: 80px;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  cursor: pointer;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  transform-origin: center;
+}
+
+.mole.normal {
+  background-image: url("mole.png");
+}
+
+.mole.gold {
+  background-image: url("gold.png");
+  animation: goldGlow 0.4s infinite alternate;
+}
+
+.mole.bomb {
+  background-image: url("bomb.png");
+}
+
+@keyframes goldGlow {
+  from {
+    filter: brightness(1);
+  }
+  to {
+    filter: brightness(1.5) drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
+  }
+}
+
+.mole.hit {
+  animation: moleHit 0.12s ease-out forwards;
+}
+
+@keyframes moleHit {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.78);
+    opacity: 0.75;
+  }
+}
+
+.hit-effect {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 20;
+  animation: floatScore 0.55s ease-out forwards;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+.hit-effect.normal {
+  color: #ffffff;
+  font-size: 28px;
+}
+
+.hit-effect.gold {
+  color: #ffd700;
+  font-size: 34px;
+}
+
+.hit-effect.bomb {
+  color: #ff3b30;
+  font-size: 34px;
+}
+
+.hit-effect.fever {
+  animation: feverFloat 0.65s ease-out forwards;
+  text-shadow: 0 0 10px rgba(255,255,255,0.9), 0 0 18px rgba(255,215,0,0.8);
+}
+
+@keyframes floatScore {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -60%) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -98%) scale(0.92);
+  }
+}
+
+@keyframes feverFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35) rotate(-5deg);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -62%) scale(1.35) rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -120%) scale(1.05) rotate(-2deg);
+  }
+}
+
+.spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 15;
+  animation: sparkBurst 0.45s ease-out forwards;
+}
+
+.spark::before {
+  content: "✨";
+  font-size: 24px;
+}
+
+.spark.gold::before {
+  content: "🌟";
+  font-size: 28px;
+}
+
+.spark.bomb::before {
+  content: "💥";
+  font-size: 30px;
+}
+
+.spark.fever::before {
+  content: "⚡";
+  font-size: 30px;
+}
+
+@keyframes sparkBurst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.95);
+  }
+}
+
+button {
+  padding: 12px 24px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#startBtn {
+  background: #ffcc00;
+}
+
+#pauseBtn {
+  background: #ffffff;
+  position: relative;
+  z-index: 1001;
+}
+
+#pauseBtn:not(:disabled) {
+  opacity: 1;
+}
+
+#pauseOverlay,
+#countdownOverlay,
+#resultOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+#pauseOverlay {
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 30px;
+  z-index: 998;
+}
+
+#countdownOverlay {
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-size: 72px;
+  font-weight: bold;
+  z-index: 997;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.35);
+}
+
+#resultOverlay {
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
+}
+
+#resultBox {
+  background: #fff;
+  padding: 24px 28px;
+  border-radius: 16px;
+  min-width: 260px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+}
+
+#resultText {
+  line-height: 1.7;
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 420px) {
+  #board {
+    width: 300px;
+    gap: 8px;
+  }
+
+  .hole {
+    width: 94px;
+    height: 94px;
+  }
+
+  .mole {
+    width: 74px;
+    height: 74px;
+    top: 10px;
+    left: 10px;
+  }
+
+  button {
+    padding: 10px 18px;
+    font-size: 16px;
+  }
+
+  #countdownOverlay {
+    font-size: 56px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>もぐら伝説</h1>
+
+<div id="controls">
+  <button id="startBtn" onclick="startGame()">スタート</button>
+  <button id="pauseBtn" onclick="togglePause()" disabled>一時停止</button>
+</div>
+
+<div id="info">
+  <p>スコア: <span id="score">0</span></p>
+  <p>ハイスコア: <span id="highscore">0</span></p>
+  <p id="comboWrap">コンボ: <span id="combo">0</span></p>
+  <p>残り時間: <span id="time">30</span></p>
+</div>
+
+<div id="board"></div>
+
+<div id="pauseOverlay">一時停止中</div>
+<div id="countdownOverlay">3</div>
+
+<div id="resultOverlay">
+  <div id="resultBox">
+    <div id="resultText"></div>
+    <button onclick="closeResult()">OK</button>
+  </div>
+</div>
+
+<audio id="bgm" src="bgm.mp3" loop preload="auto"></audio>
+<audio id="hit" src="hit.mp3" preload="auto"></audio>
+<audio id="gold" src="gold.mp3" preload="auto"></audio>
+<audio id="bomb" src="bomb.mp3" preload="auto"></audio>
+<audio id="countdownSound" src="countdown.mp3" preload="auto"></audio>
+<audio id="goSound" src="go.mp3" preload="auto"></audio>
+<audio id="voiceLow" src="voice_low.wav" preload="auto"></audio>
+<audio id="voiceMid" src="voice_mid.wav" preload="auto"></audio>
+<audio id="voiceHigh" src="voice_high.wav" preload="auto"></audio>
+<audio id="highscoreSound" src="highscore.wav" preload="auto"></audio>
+
+<script>
+const board = document.getElementById("board");
+const startBtn = document.getElementById("startBtn");
+const scoreEl = document.getElementById("score");
+const highscoreEl = document.getElementById("highscore");
+const comboEl = document.getElementById("combo");
+const comboWrap = document.getElementById("comboWrap");
+const timeEl = document.getElementById("time");
+const pauseBtn = document.getElementById("pauseBtn");
+const pauseOverlay = document.getElementById("pauseOverlay");
+const countdownOverlay = document.getElementById("countdownOverlay");
+const resultOverlay = document.getElementById("resultOverlay");
+const resultText = document.getElementById("resultText");
+
+const bgm = document.getElementById("bgm");
+const hit = document.getElementById("hit");
+const gold = document.getElementById("gold");
+const bomb = document.getElementById("bomb");
+const countdownSound = document.getElementById("countdownSound");
+const goSound = document.getElementById("goSound");
+const voiceLow = document.getElementById("voiceLow");
+const voiceMid = document.getElementById("voiceMid");
+const voiceHigh = document.getElementById("voiceHigh");
+const highscoreSound = document.getElementById("highscoreSound");
+
+let score = 0;
+let combo = 0;
+let time = 30;
+let timer = null;
+let moleTimer = null;
+let speed = 650;
+let running = false;
+let paused = false;
+let comboTimeout = null;
+let goldTimeout = null;
+let feverShakeTimeout = null;
+let resultVoiceTimeout = null;
+let isCountingDown = false;
+
+let currentMole = null;
+let currentMoleType = null;
+let currentGoldExpireAt = null;
+let currentGoldRemaining = null;
+
+let highscore = Number(localStorage.getItem("highscore")) || 0;
+highscoreEl.textContent = highscore;
+
+// 9マス生成
+for (let i = 0; i < 9; i++) {
+  const hole = document.createElement("div");
+  hole.classList.add("hole");
+  board.appendChild(hole);
+}
+
+function stopResultVoices() {
+  [voiceLow, voiceMid, voiceHigh, highscoreSound].forEach(audio => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+}
+
+function clearResultVoiceTimeout() {
+  if (resultVoiceTimeout) {
+    clearTimeout(resultVoiceTimeout);
+    resultVoiceTimeout = null;
+  }
+}
+
+function playResultVoice() {
+  if (score <= 10) {
+    voiceLow.play().catch(() => {});
+  } else if (score < 20) {
+    voiceMid.play().catch(() => {});
+  } else {
+    voiceHigh.play().catch(() => {});
+  }
+}
+
+function vibrateByType(type) {
+  if (!("vibrate" in navigator)) return;
+
+  if (type === "normal") {
+    navigator.vibrate(10);
+  } else if (type === "gold") {
+    navigator.vibrate(20);
+  } else if (type === "bomb") {
+    navigator.vibrate([20, 20, 40]);
+  }
+}
+
+function updateComboUI() {
+  comboEl.textContent = combo;
+
+  if (combo >= 5) {
+    comboWrap.classList.add("fever");
+  } else {
+    comboWrap.classList.remove("fever");
+  }
+}
+
+function triggerFeverBoardEffect() {
+  board.classList.remove("fever-board");
+  void board.offsetWidth;
+  board.classList.add("fever-board");
+
+  if (feverShakeTimeout) {
+    clearTimeout(feverShakeTimeout);
+  }
+
+  feverShakeTimeout = setTimeout(() => {
+    board.classList.remove("fever-board");
+    feverShakeTimeout = null;
+  }, 400);
+}
+
+function resetCombo() {
+  combo = 0;
+  updateComboUI();
+}
+
+function clearGoldTimer() {
+  if (goldTimeout) {
+    clearTimeout(goldTimeout);
+    goldTimeout = null;
+  }
+}
+
+function forgetCurrentMoleState() {
+  currentMole = null;
+  currentMoleType = null;
+  currentGoldExpireAt = null;
+  currentGoldRemaining = null;
+}
+
+function removeCurrentMole() {
+  clearGoldTimer();
+  if (currentMole && currentMole.isConnected) {
+    currentMole.remove();
+  }
+  forgetCurrentMoleState();
+}
+
+function armGoldTimeout(ms) {
+  clearGoldTimer();
+
+  if (!currentMole || currentMoleType !== "gold" || !currentMole.isConnected) return;
+
+  const duration = Math.max(0, ms);
+  currentGoldRemaining = duration;
+  currentGoldExpireAt = performance.now() + duration;
+
+  goldTimeout = setTimeout(() => {
+    if (currentMole && currentMole.isConnected) {
+      currentMole.remove();
+    }
+    clearGoldTimer();
+    forgetCurrentMoleState();
+  }, duration);
+}
+
+function resetGameState() {
+  clearInterval(timer);
+  clearInterval(moleTimer);
+  clearTimeout(comboTimeout);
+  clearTimeout(feverShakeTimeout);
+  clearResultVoiceTimeout();
+  clearGoldTimer();
+
+  timer = null;
+  moleTimer = null;
+  comboTimeout = null;
+  goldTimeout = null;
+  feverShakeTimeout = null;
+
+  document.querySelectorAll(".mole").forEach(m => m.remove());
+  board.classList.remove("fever-board");
+  comboWrap.classList.remove("fever");
+  forgetCurrentMoleState();
+  stopResultVoices();
+}
+
+async function startGame() {
+  if (running || isCountingDown) return;
+
+  resetGameState();
+
+  running = false;
+  paused = false;
+  isCountingDown = true;
+  score = 0;
+  combo = 0;
+  time = 30;
+  speed = 650;
+
+  scoreEl.textContent = score;
+  updateComboUI();
+  timeEl.textContent = time;
+  resultOverlay.style.display = "none";
+
+  startBtn.disabled = false;
+  pauseBtn.disabled = true;
+  pauseBtn.textContent = "一時停止";
+  pauseOverlay.style.display = "none";
+
+  await runCountdown();
+
+  isCountingDown = false;
+  running = true;
+
+  startBtn.disabled = false;
+  pauseBtn.disabled = false;
+
+  bgm.pause();
+  bgm.currentTime = 0;
+  bgm.volume = 0.2;
+  bgm.playbackRate = 1.0;
+  bgm.play().catch(() => {});
+
+  showMole();
+  clearInterval(moleTimer);
+  moleTimer = setInterval(showMole, speed);
+
+  clearInterval(timer);
+  timer = setInterval(() => {
+    if (paused) return;
+
+    time--;
+    timeEl.textContent = time;
+
+    if (time <= 5 && speed !== 420) {
+      speed = 420;
+      clearInterval(moleTimer);
+      moleTimer = setInterval(showMole, speed);
+    }
+
+    if (time <= 0) {
+      endGame();
+    }
+  }, 1000);
+}
+
+function runCountdown() {
+  return new Promise((resolve) => {
+    const sequence = ["3", "2", "1", "GO!"];
+    let index = 0;
+
+    countdownOverlay.style.display = "flex";
+
+    function step() {
+      if (index >= sequence.length) {
+        countdownOverlay.style.display = "none";
+        resolve();
+        return;
+      }
+
+      const text = sequence[index];
+      countdownOverlay.textContent = text;
+
+      if (navigator.vibrate) {
+        navigator.vibrate(text === "GO!" ? 50 : 30);
+      }
+
+      if (text === "GO!") {
+        goSound.pause();
+        goSound.currentTime = 0;
+        goSound.play().catch(() => {});
+      } else {
+        countdownSound.pause();
+        countdownSound.currentTime = 0;
+        countdownSound.play().catch(() => {});
+      }
+
+      index++;
+
+      setTimeout(() => {
+        step();
+      }, text === "GO!" ? 650 : 800);
+    }
+
+    step();
+  });
+}
+
+function togglePause() {
+  if (!running || isCountingDown) return;
+
+  paused = !paused;
+
+  if (paused) {
+    pauseOverlay.style.display = "flex";
+    pauseBtn.textContent = "再開";
+    startBtn.disabled = true;
+    bgm.pause();
+    clearInterval(moleTimer);
+
+    if (currentMole && currentMoleType === "gold" && currentMole.isConnected && currentGoldExpireAt) {
+      currentGoldRemaining = Math.max(0, currentGoldExpireAt - performance.now());
+    }
+    clearGoldTimer();
+  } else {
+    pauseOverlay.style.display = "none";
+    pauseBtn.textContent = "一時停止";
+    startBtn.disabled = false;
+    bgm.play().catch(() => {});
+    clearInterval(moleTimer);
+    moleTimer = setInterval(showMole, speed);
+
+    if (currentMole && currentMoleType === "gold" && currentMole.isConnected) {
+      armGoldTimeout(currentGoldRemaining ?? 400);
+    }
+  }
+}
+
+function showMole() {
+  if (!running || paused) return;
+
+  removeCurrentMole();
+
+  const holes = document.querySelectorAll(".hole");
+  const hole = holes[Math.floor(Math.random() * holes.length)];
+
+  const mole = document.createElement("div");
+  mole.classList.add("mole");
+
+  let type = "normal";
+  const rand = Math.random();
+
+  if (rand < 0.1) {
+    type = "bomb";
+  } else if (rand < 0.3) {
+    type = "gold";
+  }
+
+  mole.classList.add(type);
+
+  currentMole = mole;
+  currentMoleType = type;
+
+  mole.addEventListener("click", () => hitMole(mole, hole, type));
+  mole.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    hitMole(mole, hole, type);
+  }, { passive: false });
+
+  hole.appendChild(mole);
+
+  if (type === "gold") {
+    armGoldTimeout(400);
+  }
+}
+
+function playTypeSound(type) {
+  let sound = hit;
+
+  if (type === "gold") sound = gold;
+  if (type === "bomb") sound = bomb;
+
+  sound.pause();
+  sound.currentTime = 0;
+  sound.playbackRate = combo >= 5 && type !== "bomb" ? 1.18 : 1.0;
+  sound.play().catch(() => {});
+}
+
+function createHitEffect(hole, type, total, comboValue) {
+  const effect = document.createElement("div");
+  effect.classList.add("hit-effect", type);
+
+  if (comboValue >= 5 && total > 0) {
+    effect.classList.add("fever");
+  }
+
+  effect.textContent = total > 0 ? `+${total}` : `${total}`;
+
+  if (comboValue >= 2 && total > 0) {
+    effect.textContent += ` ${comboValue}x`;
+  }
+
+  hole.appendChild(effect);
+
+  setTimeout(() => {
+    effect.remove();
+  }, comboValue >= 5 ? 650 : 550);
+}
+
+function createSparkEffect(hole, type, comboValue) {
+  const spark = document.createElement("div");
+  spark.classList.add("spark");
+
+  if (type === "gold") spark.classList.add("gold");
+  if (type === "bomb") spark.classList.add("bomb");
+  if (comboValue >= 5 && type !== "bomb") spark.classList.add("fever");
+
+  hole.appendChild(spark);
+
+  setTimeout(() => {
+    spark.remove();
+  }, 450);
+}
+
+function hitMole(mole, hole, type) {
+  if (!running || paused || isCountingDown) return;
+  if (!mole.isConnected) return;
+
+  clearTimeout(comboTimeout);
+  clearGoldTimer();
+
+  let base = 0;
+
+  if (type === "normal") {
+    base = 1;
+  } else if (type === "gold") {
+    base = 5;
+  } else if (type === "bomb") {
+    base = -3;
+  }
+
+  if (type === "bomb") {
+    resetCombo();
+  } else {
+    combo++;
+    updateComboUI();
+  }
+
+  let total = base;
+
+  if (combo >= 2 && base > 0) {
+    total += combo;
+  }
+
+  score += total;
+  if (score < 0) score = 0;
+  scoreEl.textContent = score;
+
+  playTypeSound(type);
+  vibrateByType(type);
+
+  mole.classList.add("hit");
+  mole.style.pointerEvents = "none";
+
+  createHitEffect(hole, type, total, combo);
+  createSparkEffect(hole, type, combo);
+
+  if (combo >= 5 && type !== "bomb") {
+    triggerFeverBoardEffect();
+  }
+
+  comboTimeout = setTimeout(() => {
+    resetCombo();
+  }, 1000);
+
+  setTimeout(() => {
+    if (mole.isConnected) {
+      mole.remove();
+    }
+  }, 120);
+
+  forgetCurrentMoleState();
+}
+
+function endGame() {
+  if (!running) return;
+
+  running = false;
+  paused = false;
+  isCountingDown = false;
+
+  resetGameState();
+
+  bgm.pause();
+  bgm.currentTime = 0;
+
+  startBtn.disabled = false;
+  pauseBtn.disabled = true;
+  pauseBtn.textContent = "一時停止";
+  pauseOverlay.style.display = "none";
+
+  let isNewRecord = false;
+  if (score > highscore) {
+    highscore = score;
+    localStorage.setItem("highscore", highscore);
+    highscoreEl.textContent = highscore;
+    isNewRecord = true;
+  }
+
+  resultText.innerHTML = `
+    スコア: <strong>${score}</strong><br>
+    ハイスコア: <strong>${highscore}</strong>
+    ${isNewRecord ? "<br><br>ハイスコア更新！" : ""}
+  `;
+  resultOverlay.style.display = "flex";
+
+  if (isNewRecord) {
+    highscoreSound.play().catch(() => {});
+    resultVoiceTimeout = setTimeout(() => {
+      playResultVoice();
+    }, 1200);
+  } else {
+    playResultVoice();
+  }
+}
+
+function closeResult() {
+  resultOverlay.style.display = "none";
+}
+</script>
+
+</body>
+</html>
